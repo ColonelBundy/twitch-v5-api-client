@@ -8,8 +8,15 @@
     "watch": "cross-env DEBUG=twitch concurrently -kr \"tsc -w -p .\" \"nodemon dist/app.js --watch dist/ --delay 1000ms\"",
     "dev": "cross-env DEBUG=twitch nodemon dist/app.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/makkesk8/twitch-v5-api-client.git"
+  },
   "author": "makkesk8",
   "license": "MIT",
+  "engines": {
+    "node": ">=6.0"
+  },
   "dependencies": {
     "request": "^2.79.0"
   },

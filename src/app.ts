@@ -130,11 +130,11 @@ export interface VideoInterface {
     description: string,
     description_html: string,
     fps: {
-        chunked: number,
-        high: number,
-        low: number,
-        medium: number,
-        mobile: number
+        chunked?: number,
+        high?: number,
+        low?: number,
+        medium?: number,
+        mobile?: number
     },
     game: string,
     language: string,
@@ -147,11 +147,11 @@ export interface VideoInterface {
     },
     published_at: Date,
     resolutions: {
-        chunked: string,
-        high: string,
-        medium: string,
-        low: string,
-        mobile: string
+        chunked?: string,
+        high?: string,
+        medium?: string,
+        low?: string,
+        mobile?: string
     },
     status: string,
     tag_list: string,
@@ -194,7 +194,7 @@ export interface CommunityInterface {
     summary: string
 }
 
-export interface IGetChannelsByUsername {
+export interface UsersInterface {
     _total: Number,
     users: Array<UserInterface>
 }
@@ -229,7 +229,7 @@ export class TwitchClient {
 /**
  * Get user(s) by username
  * 
- * @param {string[]} users
+ * @param {Array<string>} users
  * @returns promise
  * 
  * @memberOf TwitchClient
@@ -238,7 +238,7 @@ export class TwitchClient {
     return new Promise((resolve, reject) => {
         this._debug(`Getting channel(s) by username`);
 
-        let users_string = '';
+        let users_string: string = '';
 
         if (users.length > 0) {
             users.forEach((user, i) => {
@@ -250,7 +250,7 @@ export class TwitchClient {
             });
         }
 
-        this.CallApi({url: `/users?login=${users_string}`}).then((data: IGetChannelsByUsername) => {
+        this.CallApi({url: `/users?login=${users_string}`}).then((data: UsersInterface) => {
             return resolve(data);
         }).catch((err) => reject(err));
     })
@@ -265,7 +265,7 @@ export class TwitchClient {
  * 
  * @memberOf TwitchClient
  */
-  public GetChannelFollowers(user_id: number, options: FollowersOptionsInterface) {
+  public GetChannelFollowers(user_id: number, options?: FollowersOptionsInterface) {
     return new Promise((resolve, reject) => {
         this._debug(`Getting channel followers by id: ${user_id}`);
         this.CallApi({url: `/channels/${user_id}/follows${this.ConstructOptions(options)}`}).then((data: FollowersInterface) => {
@@ -292,8 +292,8 @@ export class TwitchClient {
   public GetChannelTeams(user_id: number) {
     return new Promise((resolve, reject) => {
         this._debug(`Getting channel teams by id: ${user_id}`);
-        this.CallApi({url: `/channels/${user_id}/teams`}).then((data: TeamsInterface[]) => {
-            return resolve(data);
+        this.CallApi({url: `/channels/${user_id}/teams`}).then((data: any) => {
+            return resolve(<TeamsInterface[]>data.teams);
         }).catch((err) => reject(err));
     })
   }
@@ -307,10 +307,10 @@ export class TwitchClient {
  * 
  * @memberOf TwitchClient
  */
-  public GetChannelVideos(user_id: number, options: VideosOptionsInterface) {
+  public GetChannelVideos(user_id: number, options?: VideosOptionsInterface) {
     return new Promise((resolve, reject) => {
         this._debug(`Getting channel videos by id: ${user_id}`);
-        this.CallApi({url: `/channels/${user_id}/videos${this.ConstructOptions(options)}`}).then((data: VideosInterface[]) => {
+        this.CallApi({url: `/channels/${user_id}/videos${this.ConstructOptions(options)}`}).then((data: VideosInterface) => {
             return resolve(data);
         }).catch((err) => reject(err));
     })
@@ -364,21 +364,19 @@ export class TwitchClient {
    * @memberOf TwitchClient
    */
   private ConstructOptions(options: Object) {
-    let query = '';
+    let query: string = '';
 
     if (!options || Object.keys(options).length === 0) {
-        return;
+        return '';
     }
 
     // Nasty 
     Object.keys(options).forEach((option, i) => { 
         if (options.hasOwnProperty(option)) {
-            if (Object.keys(options).length > 0) {
-                if (i === 0) {
-                    query += '?'
-                } else {
-                    query += '&'
-                }
+            if (i === 0) {
+                query += '?'
+            } else {
+                query += '&'
             }
             
             query += `${option}=${options[option]}`;
@@ -420,15 +418,20 @@ export class TwitchClient {
 }
 
 
-const api = new TwitchClient('t7esel84mtsx2x0lhxuppvonn5naclz');
+//const api = new TwitchClient('t7esel84mtsx2x0lhxuppvonn5naclz');
 
 //api.GetChannelsByUsername(['b0aty']).then((data) => console.log(data)).catch((err) => console.log(err));
-/*api.GetChannelFollowers(27107346, { direction: 'desc', offset: 25 }).then((data: FollowersInterface) => {
+/*api.GetChannelFollowers(27107346).then((data: FollowersInterface) => {
     console.log(data);
-    if (data.next) {
-        data.next().then(data => console.log(data)).catch((err) => console.log(err));
+}).catch((err) => console.log(err));
+*/
+/*api.GetChannelTeams(27107346).then((data: Array<TeamsInterface>) => {
+    if( typeof data === 'array') {
+        console.log('its an array');
+    } else if (typeof data === 'object') {
+        console.log('its an object');
     }
-}).catch((err) => console.log(err));*/
-
+}).catch((err) => console.log(err));
+*/
 //api.GetChannelCommunity(27107346).then((data: VideosInterface) => console.log(data)).catch((err) => console.log(err));
-api.RawApi('/channels/27107346').then((data) => console.log(data)).catch((err) => console.log(err));
+//api.RawApi('/channels/27107346').then((data) => console.log(data)).catch((err) => console.log(err));

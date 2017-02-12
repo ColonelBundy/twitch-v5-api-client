@@ -1,7 +1,7 @@
 import request = require('request');
 import debug = require('debug');
 
-export interface OptionsInterface {
+export interface ICombinedOptions {
   url?: string,
   limit?: number,
   offset?: number,
@@ -9,26 +9,40 @@ export interface OptionsInterface {
   direction?: 'desc' | 'asc',
   broadcast_type?: string,
   language?: string,
-  sort?: string
+  sort?: string,
+  stream_type?: 'live' | 'playlist' | 'all'
 }
 
-export interface StreamResponseInterface {
-  streams: Array<StreamInterface>
+export interface IDefaultOptions {
+    limit?: number,
+    offset?: number
+}
+
+export interface IStreamResponse {
+  streams: Array<IStream>
   _total: Number
 }
 
-export interface StreamInterface extends StreamResponseInterface {
+export interface IStream {
+  _id: string,
   game: string,
+  community_id: string,
   viewers: number,
-  created_at: String,
   video_height: number,
   average_fps: number,
   delay: number,
+  created_at: Date,
   is_playlist: boolean,
-  channel: ChannelInterface
+  preview: {
+      small: string,
+      medium: string,
+      large: string,
+      template: string,
+  },
+  channel: IChannel
 }
 
-export interface ChannelInterface {
+export interface IChannel {
   mature: boolean,
   status: string,
   broadcaster_language: string,
@@ -49,30 +63,30 @@ export interface ChannelInterface {
   followers: number
 }
 
-export interface UserInterface {
+export interface IUser {
     display_name: string,
     _id: number,
     name: string,
-    type: UserTypes,
+    type: IUserTypes,
     bio: string,
     created_at: Date,
     updated_at: Date,
     logo: string
 }
 
-export interface TwitchError {
+export interface ITwitchError {
   error: String,
   status: Number,
   message: String
 }
 
-export enum UserTypes {
+export enum IUserTypes {
   user,
   staff,
   admin
 }
 
-export interface FollowersOptionsInterface {
+export interface IGetChannelFollowersOptions {
     limit?: number,
     offset?: number,
     cursor?: string,
@@ -89,10 +103,10 @@ export interface FollowersInterface {
 export interface IFollower {
     created_at: Date,
     notifications: boolean,
-    user: UserInterface
+    user: IUser
 }
 
-export interface TeamsInterface {
+export interface ITeams {
     _id: number,
     background: string,
     banner: string,
@@ -104,7 +118,7 @@ export interface TeamsInterface {
     updated_at: Date
 }
 
-export interface VideosOptionsInterface {
+export interface IGetChannelVideosOptions {
     limit?: number,
     offset?: number,
     broadcast_type?: string,
@@ -112,12 +126,12 @@ export interface VideosOptionsInterface {
     sort?: string
 }
 
-export interface VideosInterface {
+export interface IVideos {
     _total: number,
-    videos: Array<VideoInterface>,
+    videos: Array<IVideo>,
 }
 
-export interface VideoInterface {
+export interface IVideo {
     _id: string,
     broadcast_id: string,
     broadcast_type: string,
@@ -180,7 +194,7 @@ export interface VideoInterface {
     views: number
 }
 
-export interface CommunityInterface {
+export interface ICommunity {
     _id: string,
     avatar_image_url: string,
     cover_image_url: string,
@@ -196,7 +210,29 @@ export interface CommunityInterface {
 
 export interface UsersInterface {
     _total: Number,
-    users: Array<UserInterface>
+    users: Array<IUser>
+}
+
+export interface IGetStreamByUserOptions {
+    stream_type: 'live' | 'playlist' | 'all'
+}
+
+export interface IGetStreamsOptions {
+    game?: string,
+    language?: string,
+    stream_type?: 'live' | 'playlist' | 'all',
+    limit?: number,
+    offset?: number
+}
+
+export interface IGetFeaturedStreams {
+    image: string,
+    priority: number,
+    scheduled: boolean,
+    sponsored: boolean,
+    stream: IStream,
+    text: string,
+    title: string
 }
 
 
@@ -220,7 +256,7 @@ export class TwitchClient {
   public GetChannelById(user_id: number) {
     return new Promise((resolve, reject) => {
         this._debug(`Getting channel by id: ${user_id}`);
-        this.CallApi({url: `/channels/${user_id}`}).then((data: ChannelInterface) => {
+        this.CallApi(`/channels/${user_id}`).then((data: IChannel) => {
             return resolve(data);
         }).catch((err) => reject(err));
     })
@@ -236,21 +272,8 @@ export class TwitchClient {
  */
   public GetChannelsByUsername(users: Array<string>) {
     return new Promise((resolve, reject) => {
-        this._debug(`Getting channel(s) by username`);
-
-        let users_string: string = '';
-
-        if (users.length > 0) {
-            users.forEach((user, i) => {
-                users_string += user;
-
-                if (users.length !== (i + 1)) {
-                    users_string += ',';
-                }
-            });
-        }
-
-        this.CallApi({url: `/users?login=${users_string}`}).then((data: UsersInterface) => {
+        this._debug(`Getting channels by usernames: ${this.ConstructCommalist(users)}`);
+        this.CallApi(`/users?login=${this.ConstructCommalist(users)}`).then((data: UsersInterface) => {
             return resolve(data);
         }).catch((err) => reject(err));
     })
@@ -260,15 +283,15 @@ export class TwitchClient {
  * Get list of followers of a channel by user_id
  * 
  * @param {number} user_id
- * @param {FollowersOptionsInterface} options
+ * @param {IGetChannelFollowersOptions} options
  * @returns promise
  * 
  * @memberOf TwitchClient
  */
-  public GetChannelFollowers(user_id: number, options?: FollowersOptionsInterface) {
+  public GetChannelFollowers(user_id: number, options?: IGetChannelFollowersOptions) {
     return new Promise((resolve, reject) => {
         this._debug(`Getting channel followers by id: ${user_id}`);
-        this.CallApi({url: `/channels/${user_id}/follows${this.ConstructOptions(options)}`}).then((data: FollowersInterface) => {
+        this.CallApi(`/channels/${user_id}/follows${this.ConstructOptions(options)}`).then((data: FollowersInterface) => {
             if (data._cursor !== '') {
                 let self = this;
                 data.next = function() {
@@ -292,8 +315,8 @@ export class TwitchClient {
   public GetChannelTeams(user_id: number) {
     return new Promise((resolve, reject) => {
         this._debug(`Getting channel teams by id: ${user_id}`);
-        this.CallApi({url: `/channels/${user_id}/teams`}).then((data: any) => {
-            return resolve(<TeamsInterface[]>data.teams);
+        this.CallApi(`/channels/${user_id}/teams`).then((data: any) => {
+            return resolve(<ITeams[]>data.teams);
         }).catch((err) => reject(err));
     })
   }
@@ -302,15 +325,15 @@ export class TwitchClient {
  * Get list of videos of a channel by user_id
  * 
  * @param {number} user_id
- * @param {VideosOptionsInterface} options
+ * @param {IGetChannelVideosOptions} options
  * @returns promise
  * 
  * @memberOf TwitchClient
  */
-  public GetChannelVideos(user_id: number, options?: VideosOptionsInterface) {
+  public GetChannelVideos(user_id: number, options?: IGetChannelVideosOptions) {
     return new Promise((resolve, reject) => {
         this._debug(`Getting channel videos by id: ${user_id}`);
-        this.CallApi({url: `/channels/${user_id}/videos${this.ConstructOptions(options)}`}).then((data: VideosInterface) => {
+        this.CallApi(`/channels/${user_id}/videos${this.ConstructOptions(options)}`).then((data: IVideos) => {
             return resolve(data);
         }).catch((err) => reject(err));
     })
@@ -327,10 +350,86 @@ export class TwitchClient {
  */
   public GetChannelCommunity(user_id: number) {
     return new Promise((resolve, reject) => {
-        console.log(` :: TwitchApi - 'GetChannelCommunity' is depcrecated, sorry ::`);
+        console.error(` :: TwitchApi - 'GetChannelCommunity' is depcrecated, sorry ::`);
         reject('Deprecated');
         this._debug(`Getting channel community by id: ${user_id}`);
-        this.CallApi({url: `/channels/${user_id}/community`}).then((data: CommunityInterface) => {
+        this.CallApi(`/channels/${user_id}/community`).then((data: ICommunity) => {
+            return resolve(data);
+        }).catch((err) => reject(err));
+    })
+  }
+
+  /**
+   * Get a stream by user id
+   * 
+   * @param {number} user_id
+   * @param {IGetStreamByUserOptions} [options]
+   * @returns promise
+   * 
+   * @memberOf TwitchClient
+   */
+  public GetStreamByUser(user_id: number, options?: IGetStreamByUserOptions) {
+    return new Promise((resolve, reject) => {
+        this._debug(`Getting stream by user id: ${user_id}`);
+        this.CallApi(`/streams/${user_id}${this.ConstructOptions(options)}`).then((data: any) => {
+            return resolve(<IStream>data.stream);
+        }).catch((err) => reject(err));
+    })
+  }
+
+
+/**
+ * Get several streams by user_id's
+ * 
+ * @param {Array<string>} users
+ * @param {IGetStreamsByUserOptions} [options]
+ * @returns promise
+ * 
+ * @memberOf TwitchClient
+ */
+  public GetStreamsByUser(users: Array<string>, options?: IDefaultOptions) {
+    return new Promise((resolve, reject) => {
+        this._debug(`Getting streams by user array: ${this.ConstructCommalist(users)}`);
+        this.CallApi(`/streams/?channel=${this.ConstructCommalist(users)}${this.ConstructOptions(options)}`)
+         .then((data: IStreamResponse) => {
+            return resolve(data);
+        }).catch((err) => reject(err));
+    })
+  }
+
+/**
+ * Get streams by language, stream_type, game
+ * 
+ * @param {IGetStreamsOptions} options
+ * @returns promise
+ * 
+ * @memberOf TwitchClient
+ */
+  public GetStreams(options: IGetStreamsOptions) {
+    return new Promise((resolve, reject) => {
+        this._debug(`Getting streams`);
+        if (Object.keys(options).length === 0) {
+            return reject('Need atleast one paramter to get streams by.');
+        }
+
+        this.CallApi(`/streams/${this.ConstructOptions(options)}`).then((data: any) => {
+            return resolve(data);
+        }).catch((err) => reject(err));
+    })
+  }
+
+/**
+ * Get list of featured streams
+ * 
+ * @param {IGetStreamsOptions} [options]
+ * @returns promise
+ * 
+ * @memberOf TwitchClient
+ */
+  public GetFeaturedStreams(options?: IGetStreamsOptions) {
+    return new Promise((resolve, reject) => {
+        this._debug(`Getting featured streams`);
+        this.CallApi(`/streams/featured/${this.ConstructOptions(options)}`).then((data: IGetFeaturedStreams) => {
             return resolve(data);
         }).catch((err) => reject(err));
     })
@@ -348,7 +447,7 @@ export class TwitchClient {
   public RawApi(url: string, options?: Object) {
     return new Promise((resolve, reject) => {
         this._debug(`Rawapi request: ${url + this.ConstructOptions(options)}`);
-        this.CallApi({url: url + (options ? this.ConstructOptions(options) : '')}).then((data: CommunityInterface) => {
+        this.CallApi(url + (options ? this.ConstructOptions(options) : '')).then((data: ICommunity) => {
             return resolve(data);
         }).catch((err) => reject(err));
     })
@@ -387,6 +486,23 @@ export class TwitchClient {
   }
 
 /**
+ * Create a comma list seperated string from array
+ * 
+ * @private
+ * @param {Array<string>} users
+ * @returns string
+ * 
+ * @memberOf TwitchClient
+ */
+  private ConstructCommalist(users: Array<string>) {
+        if (users.length > 0) {
+            return users.join(',');
+        }
+
+        return;
+  }
+
+/**
  * Call the api
  * 
  * @private
@@ -395,15 +511,15 @@ export class TwitchClient {
  * 
  * @memberOf TwitchClient
  */
-  private CallApi(options: OptionsInterface) {
+  private CallApi(url: string) {
     return new Promise((resolve, reject) => {
-        this._debug(`Calling api: ${this._twitchURI}${options.url}`);
+        this._debug(`Calling api: ${this._twitchURI}${url}`);
         request.get({
             headers: {
                 'Accept': 'application/vnd.twitchtv.v5+json',
                 'Client-ID': this._client_id
             },
-            url: this._twitchURI + options.url
+            url: this._twitchURI + url
         }, (err, response, body) => {
             if (err || response.statusCode !== 200) { // quick hack :D
                 let data = JSON.parse(body);
@@ -420,12 +536,12 @@ export class TwitchClient {
 
 //const api = new TwitchClient('t7esel84mtsx2x0lhxuppvonn5naclz');
 
-//api.GetChannelsByUsername(['b0aty']).then((data) => console.log(data)).catch((err) => console.log(err));
-/*api.GetChannelFollowers(27107346).then((data: FollowersInterface) => {
+// api.GetChannelsByUsername(['b0aty', 'want33d']).then((data) => console.log(data)).catch((err) => console.log(err));
+/* api.GetChannelFollowers(27107346).then((data: FollowersInterface) => {
     console.log(data);
 }).catch((err) => console.log(err));
 */
-/*api.GetChannelTeams(27107346).then((data: Array<TeamsInterface>) => {
+/* api.GetChannelTeams(27107346).then((data: Array<TeamsInterface>) => {
     if( typeof data === 'array') {
         console.log('its an array');
     } else if (typeof data === 'object') {
@@ -433,5 +549,10 @@ export class TwitchClient {
     }
 }).catch((err) => console.log(err));
 */
-//api.GetChannelCommunity(27107346).then((data: VideosInterface) => console.log(data)).catch((err) => console.log(err));
-//api.RawApi('/channels/27107346').then((data) => console.log(data)).catch((err) => console.log(err));
+// api.GetStreamByUser(27107346).then((data: StreamInterface) => console.log(data)).catch((err) => console.log(err));
+// api.RawApi('/channels/27107346').then((data) => console.log(data)).catch((err) => console.log(err));
+
+
+
+
+

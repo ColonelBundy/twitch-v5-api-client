@@ -1,5 +1,5 @@
 import should = require('should');
-import { TwitchClient, UsersInterface, ChannelInterface, FollowersInterface, TeamsInterface, VideosInterface }  from './app';
+import { TwitchClient, UsersInterface, IChannel, FollowersInterface, ITeams, IVideos }  from './app';
 
 const Client = new TwitchClient('t7esel84mtsx2x0lhxuppvonn5naclz');
 const TestUser = {
@@ -28,7 +28,7 @@ describe('Channels', function() {
 
   describe('#GetChannelById()', function() {
       it('should return an user object', function(done) {
-        Client.GetChannelById(TestUser.id).then((data: ChannelInterface) => {
+        Client.GetChannelById(TestUser.id).then((data: IChannel) => {
           data.should.have.properties(
             ['mature', 'status', 'broadcaster_language', 'display_name', 'game', 'language',
             'name', 'created_at', 'updated_at', '_id', 'logo', 'video_banner', 'profile_banner', 
@@ -57,7 +57,7 @@ describe('Channels', function() {
 
   describe('#GetChannelTeams()', function() {
       it('should return a list of teams of a user', function(done) {
-        Client.GetChannelTeams(TestUser.id).then((data: Array<TeamsInterface>) => {
+        Client.GetChannelTeams(TestUser.id).then((data: Array<ITeams>) => {
           data.should.be.type('object');
           should(data[0]).have.properties(['_id', 'background', 'banner', 'created_at', 
             'display_name', 'info', 'logo', 'name', 'updated_at']);
@@ -70,7 +70,7 @@ describe('Channels', function() {
 
   describe('#GetChannelVideos()', function() {
       it('should return a list of videos of a user', function(done) {
-        Client.GetChannelVideos(TestUser.id).then((data: VideosInterface) => {
+        Client.GetChannelVideos(TestUser.id).then((data: IVideos) => {
           data.videos.should.be.type('object');
           should(data.videos[0]).have.properties(['_id', 'broadcast_id', 'broadcast_type', 'created_at', 
           'description', 'description_html', 'game', 'language', 'length', 'published_at', 'status', 

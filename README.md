@@ -1,5 +1,5 @@
-# Twitch V5 api client <a href="https://codeclimate.com/github/makkesk8/twitch-v5-api-client"><img src="https://codeclimate.com/github/makkesk8/twitch-v5-api-client/badges/gpa.svg" /></a> <a href="https://codeclimate.com/github/makkesk8/twitch-v5-api-client/coverage"><img src="https://codeclimate.com/github/makkesk8/twitch-v5-api-client/badges/coverage.svg" /></a> [![Dependency Status](https://david-dm.org/makkesk8/twitch-v5-api-client.svg)](https://david-dm.org/makkesk8/twitch-v5-api-client)
-a node.js client to interact with twitch's v5 api.
+# Twitch V5 api client <a href="https://codeclimate.com/github/makkesk8/twitch-v5-api-client"><img src="https://codeclimate.com/github/makkesk8/twitch-v5-api-client/badges/gpa.svg" /></a> <a href="https://codeclimate.com/github/makkesk8/twitch-v5-api-client/coverage"><img src="https://codeclimate.com/github/makkesk8/twitch-v5-api-client/badges/coverage.svg" /></a> [![Dependency Status](https://david-dm.org/makkesk8/twitch-v5-api-client.svg)](https://david-dm.org/makkesk8/twitch-v5-api-client) <a href="https://travis-ci.org/makkesk8/twitch-v5-api-client"><img src="https://api.travis-ci.org/makkesk8/twitch-v5-api-client.svg?branch=master"></a>
+a node.js client to interact with twitch's v5 api. (in progress)
 
 ## Install
 TBD

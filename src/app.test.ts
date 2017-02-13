@@ -3,13 +3,18 @@ import * as Twitch from './app';
 
 const Client = new Twitch.TwitchClient('t7esel84mtsx2x0lhxuppvonn5naclz');
 const TestUser = {
-  id: 46375210,
-  name: 'NoCopyrightSounds'
+  id: 23161357,
+  name: 'lirik'
 };
 
 const TestUser2 = {
   id: 27446517,
   name: 'Monstercat'
+}
+
+const TestUser3 = {
+  id: 46375210,
+  name: 'nocopyrightsounds'
 }
 
 
@@ -102,7 +107,7 @@ describe('streams', function() {
 
   describe('#GetStreamsByUser()', function() {
       it('should return an array stream objects', function(done) {
-        Client.GetStreamsByUser([TestUser.id, TestUser2.id]).then((data: Twitch.IStreamResponse) => {
+        Client.GetStreamsByUser([TestUser3.id, TestUser2.id]).then((data: Twitch.IStreamResponse) => {
           data.streams.should.be.Array();
           should(data.streams[0]).have.properties(['_id', 'game', 'community_id', 'viewers', 
           'video_height', 'average_fps', 'delay', 'created_at', 'is_playlist', 'preview', 'channel']);

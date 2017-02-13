@@ -235,6 +235,15 @@ export interface IGetFeaturedStreams {
     title: string
 }
 
+export interface IGetStreamSummaryOptions {
+    game?: string
+}
+
+export interface IGetStreamSummary {
+    channels: number,
+    viewers: number
+}
+
 
 export class TwitchClient {
   private _client_id: string;
@@ -387,7 +396,7 @@ export class TwitchClient {
  * 
  * @memberOf TwitchClient
  */
-  public GetStreamsByUser(users: Array<string>, options?: IDefaultOptions) {
+  public GetStreamsByUser(users: Array<number>, options?: IDefaultOptions) {
     return new Promise((resolve, reject) => {
         this._debug(`Getting streams by user array: ${this.ConstructCommalist(users)}`);
         this.CallApi(`/streams/?channel=${this.ConstructCommalist(users)}${this.ConstructOptions(options)}`)
@@ -412,7 +421,7 @@ export class TwitchClient {
             return reject('Need atleast one paramter to get streams by.');
         }
 
-        this.CallApi(`/streams/${this.ConstructOptions(options)}`).then((data: any) => {
+        this.CallApi(`/streams/${this.ConstructOptions(options)}`).then((data: IStreamResponse) => {
             return resolve(data);
         }).catch((err) => reject(err));
     })
@@ -429,7 +438,24 @@ export class TwitchClient {
   public GetFeaturedStreams(options?: IGetStreamsOptions) {
     return new Promise((resolve, reject) => {
         this._debug(`Getting featured streams`);
-        this.CallApi(`/streams/featured/${this.ConstructOptions(options)}`).then((data: IGetFeaturedStreams) => {
+        this.CallApi(`/streams/featured${this.ConstructOptions(options)}`).then((data: any) => {
+            return resolve(<IGetFeaturedStreams[]>data.featured);
+        }).catch((err) => reject(err));
+    })
+  }
+
+/**
+ * Get stream summary by game or overall
+ * 
+ * @param {IGetStreamSummaryOptions} [options]
+ * @returns promise
+ * 
+ * @memberOf TwitchClient
+ */
+  public GetStreamSummary(options?: IGetStreamSummaryOptions) {
+    return new Promise((resolve, reject) => {
+        this._debug(`Getting stream summary`);
+        this.CallApi(`/streams/summary${this.ConstructOptions(options)}`).then((data: IGetStreamSummary) => {
             return resolve(data);
         }).catch((err) => reject(err));
     })
@@ -494,7 +520,7 @@ export class TwitchClient {
  * 
  * @memberOf TwitchClient
  */
-  private ConstructCommalist(users: Array<string>) {
+  private ConstructCommalist(users: Array<any>) {
         if (users.length > 0) {
             return users.join(',');
         }
@@ -534,7 +560,7 @@ export class TwitchClient {
 }
 
 
-//const api = new TwitchClient('t7esel84mtsx2x0lhxuppvonn5naclz');
+ // const api = new TwitchClient('t7esel84mtsx2x0lhxuppvonn5naclz');
 
 // api.GetChannelsByUsername(['b0aty', 'want33d']).then((data) => console.log(data)).catch((err) => console.log(err));
 /* api.GetChannelFollowers(27107346).then((data: FollowersInterface) => {
@@ -549,7 +575,8 @@ export class TwitchClient {
     }
 }).catch((err) => console.log(err));
 */
-// api.GetStreamByUser(27107346).then((data: StreamInterface) => console.log(data)).catch((err) => console.log(err));
+ // api.GetStreams({language: 'en', stream_type: 'live'})
+ // .then((data: any) => console.log(data)).catch((err) => console.log(err));
 // api.RawApi('/channels/27107346').then((data) => console.log(data)).catch((err) => console.log(err));
 
 

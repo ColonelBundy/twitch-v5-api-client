@@ -1,22 +1,22 @@
 import should = require('should');
-import { TwitchClient, UsersInterface, IChannel, FollowersInterface, ITeams, IVideos }  from './app';
+import * as Twitch from './app';
 
-const Client = new TwitchClient('t7esel84mtsx2x0lhxuppvonn5naclz');
+const Client = new Twitch.TwitchClient('t7esel84mtsx2x0lhxuppvonn5naclz');
 const TestUser = {
-  id: 23161357,
-  name: 'lirik'
+  id: 46375210,
+  name: 'NoCopyrightSounds'
 };
 
 const TestUser2 = {
   id: 27446517,
-  name: 'monstercat'
+  name: 'Monstercat'
 }
 
+
 describe('Channels', function() {
-  
   describe('#GetChannelsByUsername()', function() {
       it('should return an array of users', function(done) {
-        Client.GetChannelsByUsername([TestUser.name, TestUser2.name]).then((data: UsersInterface) => {
+        Client.GetChannelsByUsername([TestUser.name, TestUser2.name]).then((data: Twitch.UsersInterface) => {
           should(data.users[0]).have.properties(['display_name', '_id', 'name', 'type', 'bio', 'created_at', 'updated_at', 'logo'])
           data._total.should.equal(2);
           data.users.should.be.type('object');
@@ -28,7 +28,7 @@ describe('Channels', function() {
 
   describe('#GetChannelById()', function() {
       it('should return an user object', function(done) {
-        Client.GetChannelById(TestUser.id).then((data: IChannel) => {
+        Client.GetChannelById(TestUser.id).then((data: Twitch.IChannel) => {
           data.should.have.properties(
             ['mature', 'status', 'broadcaster_language', 'display_name', 'game', 'language',
             'name', 'created_at', 'updated_at', '_id', 'logo', 'video_banner', 'profile_banner', 
@@ -43,7 +43,7 @@ describe('Channels', function() {
 
   describe('#GetChannelFollowers()', function() {
       it('should return a list of users following a user', function(done) {
-        Client.GetChannelFollowers(TestUser.id).then((data: FollowersInterface) => {
+        Client.GetChannelFollowers(TestUser.id).then((data: Twitch.FollowersInterface) => {
           should(data.follows).be.type('object');
           data.should.have.properties(['_cursor', '_total', 'follows'])
           data.follows[0].should.have.properties(['created_at', 'notifications', 'user']);
@@ -57,7 +57,7 @@ describe('Channels', function() {
 
   describe('#GetChannelTeams()', function() {
       it('should return a list of teams of a user', function(done) {
-        Client.GetChannelTeams(TestUser.id).then((data: Array<ITeams>) => {
+        Client.GetChannelTeams(TestUser.id).then((data: Array<Twitch.ITeams>) => {
           data.should.be.type('object');
           should(data[0]).have.properties(['_id', 'background', 'banner', 'created_at', 
             'display_name', 'info', 'logo', 'name', 'updated_at']);
@@ -70,7 +70,7 @@ describe('Channels', function() {
 
   describe('#GetChannelVideos()', function() {
       it('should return a list of videos of a user', function(done) {
-        Client.GetChannelVideos(TestUser.id).then((data: IVideos) => {
+        Client.GetChannelVideos(TestUser.id).then((data: Twitch.IVideos) => {
           data.videos.should.be.type('object');
           should(data.videos[0]).have.properties(['_id', 'broadcast_id', 'broadcast_type', 'created_at', 
           'description', 'description_html', 'game', 'language', 'length', 'published_at', 'status', 
@@ -83,6 +83,72 @@ describe('Channels', function() {
         });
       });
   });
+});
 
 
+describe('streams', function() {
+  
+  describe('#GetStreamByUser()', function() {
+      it('should return a stream object', function(done) {
+        Client.GetStreamByUser(TestUser2.id).then((data: Twitch.IStream) => {
+          data.should.be.Object();
+          should(data).have.properties(['_id', 'game', 'community_id', 'viewers', 
+          'video_height', 'average_fps', 'delay', 'created_at', 'is_playlist', 'preview', 'channel']);
+
+          done();
+        });
+      });
+  });
+
+  describe('#GetStreamsByUser()', function() {
+      it('should return an array stream objects', function(done) {
+        Client.GetStreamsByUser([TestUser.id, TestUser2.id]).then((data: Twitch.IStreamResponse) => {
+          data.streams.should.be.Array();
+          should(data.streams[0]).have.properties(['_id', 'game', 'community_id', 'viewers', 
+          'video_height', 'average_fps', 'delay', 'created_at', 'is_playlist', 'preview', 'channel']);
+          
+          done();
+        });
+      });
+  });
+  
+
+  describe('#GetStreams()', function() {
+      it('should return an array stream objects', function(done) {
+        Client.GetStreams({language: 'en', stream_type: 'live'}).then((data: Twitch.IStreamResponse) => {
+          data.streams.should.be.Array();
+          should(data.streams[0]).have.properties(['_id', 'game', 'community_id', 'viewers', 
+          'video_height', 'average_fps', 'delay', 'created_at', 'is_playlist', 'preview', 'channel']);
+          
+          done();
+        });
+      });
+  });
+
+  describe('#GetFeaturedStreams()', function() {
+      it('should return an array stream objects', function(done) {
+        Client.GetFeaturedStreams().then((data: Array<Twitch.IGetFeaturedStreams>) => {
+          data.should.be.Array();
+          should(data[0]).have.properties(['image', 'priority', 'scheduled', 
+          'sponsored', 'text', 'title']);
+          should(data[0]).have.property('stream').have.property('channel');
+          
+          done();
+        });
+      });
+  });
+
+  describe('#GetStreamSummary()', function() {
+      it('should return an object', function(done) {
+        Client.GetStreamSummary().then((data: Twitch.IGetStreamSummary) => {
+          data.should.be.Object();
+          should(data).have.property('channels').be.Number
+          should(data).have.property('viewers').be.Number
+          
+          done();
+        });
+      });
+  });
+
+  
 });

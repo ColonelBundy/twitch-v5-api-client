@@ -5,7 +5,7 @@
   "main": "app.js",
   "scripts": {
     "pretest": "tsc -p . --module commonjs --sourcemap",
-    "test": "nyc mocha",
+    "test": "nyc mocha ./dist/app.test.js",
     "posttest": "nyc report --reporter=json && codecov -f coverage/*.json",
     "watch": "cross-env DEBUG=twitch concurrently -kr \"tsc -w -p .\" \"nodemon dist/app.js --watch dist/ --delay 1000ms\"",
     "dev": "cross-env DEBUG=twitch tsc -p . && nodemon dist/app.js"

@@ -7,8 +7,8 @@
     "pretest": "tsc -p . --module commonjs --sourcemap",
     "test": "nyc mocha ./dist/app.test.js",
     "posttest": "nyc report --reporter=json && codecov -f coverage/*.json",
-    "watch": "cross-env DEBUG=twitch* concurrently -kr \"tsc -w -p .\" \"nodemon dist/dev.js --watch dist/ --delay 1000ms\"",
-    "dev": "cross-env DEBUG=twitch* tsc -p . && nodemon dist/dev.js"
+    "watch": "cross-env DEBUG=twitch* concurrently -kr \"tsc -w -p .\" \"nodemon dist/dev.js --watch dist/ --delay 1000ms\"", // Create dev.ts in src to use this
+    "dev": "cross-env DEBUG=twitch* tsc -p . && nodemon dist/dev.js" // Create dev.ts in src to use this
   },
   "repository": {
     "type": "git",

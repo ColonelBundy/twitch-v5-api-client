@@ -1,5 +1,6 @@
 import request = require('request');
 import debug = require('debug');
+export * from './oauth'
 
 export interface ICombinedOptions {
   url?: string,
@@ -245,7 +246,7 @@ export interface IGetStreamSummary {
 }
 
 
-export class TwitchClient {
+export class Client {
   private _client_id: string;
   private _twitchURI: string = 'https://api.twitch.tv/kraken';
   private _debug = debug('twitch');

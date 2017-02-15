@@ -18,6 +18,18 @@ const TestUser3 = {
 }
 
 
+describe('Core', function() {
+  describe('#RawApi()', function() {
+    it('should return an object', function(done) {
+        Client.RawApi('').then((data: any) => {
+          data.should.be.type('object');
+
+          done();
+        });
+      });
+  });
+});
+
 describe('Channels', function() {
   describe('#GetChannelsByUsername()', function() {
       it('should return an array of users', function(done) {

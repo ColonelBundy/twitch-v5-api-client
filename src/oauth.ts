@@ -2,6 +2,7 @@ import uuid = require('uuid/v4');
 import express = require('express')  
 import debug = require('debug');
 import request = require('request');
+import Nightmare = require('nightmare');       
 
 interface ITwitchResponse {
     access_token: string,
@@ -14,7 +15,10 @@ export interface IOptions {
     scope?: string,
     client_id: string,
     client_secret: string,
-    server?: boolean
+    server?: boolean,
+    automated?: boolean,
+    user?: string,
+    password?: string
 }
 
 export class Oauth {
@@ -45,7 +49,21 @@ export class Oauth {
         this._scope = options.scope || process.env.TWITCH_SCOPE;
 
         if (options.server) {
+            this._debug('Starting server');
             this.StartServer();
+        }
+
+        if (options.automated && options.user && options.password) {
+            this._debug(`Starting automated oauth login`);
+
+            if (!options.server) {
+                this._debug('Starting server for automated login');
+                this.StartServer();
+            }
+
+            setTimeout(() => {
+                this.Automatelogin(options.user, options.password);
+            }, 1500);
         }
     }
 
@@ -81,6 +99,41 @@ export class Oauth {
     }
 
     /**
+     * Automate twitch login to grab the access token
+     * beaware that this page contains captcha protection
+     * consider using a proxy if multiple attemps are made
+     * 
+     * @private
+     * @param {string} user
+     * @param {string} password
+     * @returns promise
+     * 
+     * @memberOf Oauth
+     */
+    private Automatelogin (user: string, password: string, show?: false) {
+        return new Promise((resolve, reject) => {
+            const nightmare = Nightmare({ show: show });
+
+            nightmare.goto(`http://localhost:${this._port}/auth`)
+                .wait('input[name="username"]')
+                .type('input[name="username"]', user)
+                .type('input[name="password"]', password)
+                .click('button')
+                .wait('twitch-data')
+                .evaluate(function () {
+                    return document.querySelector('twitch-data').textContent
+                })
+                .end()
+                .then(function (result) {
+                    resolve(JSON.parse(result));
+                })
+                .catch(function (error) {
+                    reject(error);
+                });
+        });
+    }
+
+    /**
      * Starts the server used to receive data from twitch
      * 
      * @private
@@ -95,10 +148,10 @@ export class Oauth {
 
         this.app.listen(this._port, (err) => {  
             if (err) {
-                return console.log('something bad happened', err)
+                return console.log(err);
             }
 
-                this._debug(`Server listening on ${this._port}`);
+            this._debug(`Server listening on ${this._port}`);
         })
     }
 
@@ -116,10 +169,10 @@ export class Oauth {
 
         if (req.query.code && req.query.state === this._current_state) {
             this.GetToken(req.query.code).then((data: ITwitchResponse) => {
-                res.json(data);
+                res.status(200).send(`<twitch-data>${JSON.stringify(data)}</twitch-data>`);
             }).catch((err) => console.log(err));
         } else {
-            res.send('Code was not set or state invalid');
+            res.status(500).send('Code was not set or state invalid');
         }
             
     }

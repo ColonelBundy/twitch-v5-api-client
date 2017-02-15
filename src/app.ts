@@ -351,7 +351,6 @@ export class Client {
 
 /**
  * Get community of a channel by user_id
- * DOES NOT WORK AS OF 2017-02-17
  * 
  * @param {number} user_id
  * @returns promise
@@ -360,9 +359,7 @@ export class Client {
  */
   public GetChannelCommunity(user_id: number) {
     return new Promise((resolve, reject) => {
-        console.error(` :: TwitchApi - 'GetChannelCommunity' is depcrecated, sorry ::`);
-        reject('Deprecated');
-        this._debug(`Getting channel community by id: ${user_id}`);
+        this._debug(`Getting channel community by user_id: ${user_id}`);
         this.CallApi(`/channels/${user_id}/community`).then((data: ICommunity) => {
             return resolve(data);
         }).catch((err) => reject(err));

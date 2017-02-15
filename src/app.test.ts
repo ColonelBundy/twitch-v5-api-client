@@ -58,8 +58,6 @@ describe('Channels', function() {
       });
   });
 
-
-
   describe('#GetChannelTeams()', function() {
       it('should return a list of teams of a user', function(done) {
         Client.GetChannelTeams(TestUser.id).then((data: Array<Twitch.ITeams>) => {
@@ -72,6 +70,17 @@ describe('Channels', function() {
       });
   });
 
+  describe('#GetChannelCommunity()', function() {
+      it('should return the community of a user', function(done) {
+        Client.GetChannelCommunity(TestUser.id).then((data: Twitch.ICommunity) => {
+          data.should.be.type('object');
+          should(data).have.properties(['_id', 'avatar_image_url', 'cover_image_url', 'description', 
+          'description_html', 'language', 'name', 'owner_id', 'rules', 'rules_html', 'summary']);
+
+          done();
+        });
+      });
+  });
 
   describe('#GetChannelVideos()', function() {
       it('should return a list of videos of a user', function(done) {

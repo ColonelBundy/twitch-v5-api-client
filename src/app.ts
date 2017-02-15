@@ -250,8 +250,8 @@ export class TwitchClient {
   private _twitchURI: string = 'https://api.twitch.tv/kraken';
   private _debug = debug('twitch');
 
-  constructor(client_id: string) {
-    this._client_id = client_id;
+  constructor(client_id?: string) {
+    this._client_id = client_id || process.env.TWITCH_TOKEN;
   }
 
   /**
@@ -558,28 +558,3 @@ export class TwitchClient {
     })
   }
 }
-
-
- // const api = new TwitchClient('t7esel84mtsx2x0lhxuppvonn5naclz');
-
-// api.GetChannelsByUsername(['b0aty', 'want33d']).then((data) => console.log(data)).catch((err) => console.log(err));
-/* api.GetChannelFollowers(27107346).then((data: FollowersInterface) => {
-    console.log(data);
-}).catch((err) => console.log(err));
-*/
-/* api.GetChannelTeams(27107346).then((data: Array<TeamsInterface>) => {
-    if( typeof data === 'array') {
-        console.log('its an array');
-    } else if (typeof data === 'object') {
-        console.log('its an object');
-    }
-}).catch((err) => console.log(err));
-*/
- // api.GetStreams({language: 'en', stream_type: 'live'})
- // .then((data: any) => console.log(data)).catch((err) => console.log(err));
-// api.RawApi('/channels/27107346').then((data) => console.log(data)).catch((err) => console.log(err));
-
-
-
-
-

@@ -1,7 +1,7 @@
 import should = require('should');
 import * as Twitch from './app';
 
-const Client = new Twitch.TwitchClient('t7esel84mtsx2x0lhxuppvonn5naclz');
+const Client = new Twitch.TwitchClient();
 const TestUser = {
   id: 23161357,
   name: 'lirik'

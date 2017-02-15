@@ -7,8 +7,8 @@
     "pretest": "tsc -p . --module commonjs --sourcemap",
     "test": "nyc mocha ./dist/app.test.js",
     "posttest": "nyc report --reporter=json && codecov -f coverage/*.json",
-    "watch": "cross-env DEBUG=twitch concurrently -kr \"tsc -w -p .\" \"nodemon dist/app.js --watch dist/ --delay 1000ms\"",
-    "dev": "cross-env DEBUG=twitch tsc -p . && nodemon dist/app.js"
+    "watch": "cross-env DEBUG=twitch* concurrently -kr \"tsc -w -p .\" \"nodemon dist/dev.js --watch dist/ --delay 1000ms\"",
+    "dev": "cross-env DEBUG=twitch* tsc -p . && nodemon dist/dev.js"
   },
   "repository": {
     "type": "git",
@@ -20,10 +20,13 @@
     "node": ">=6.0"
   },
   "dependencies": {
-    "request": "^2.79.0"
+    "express": "^4.14.1",
+    "request": "^2.79.0",
+    "uuid": "^3.0.1"
   },
   "devDependencies": {
     "@types/assert": "0.0.31",
+    "@types/express": "^4.0.35",
     "@types/jasmine": "^2.5.42",
     "@types/node": "^7.0.5",
     "@types/should": "^8.1.30",

@@ -2,6 +2,7 @@ import uuid = require('uuid/v4');
 import express = require('express')  
 import debug = require('debug');
 import request = require('request');
+import events = require('events');
 import Nightmare = require('nightmare'); 
 import fs = require('fs');    
 
@@ -27,7 +28,7 @@ export interface IOptions {
     automated?: IAutomation
 }
 
-export class Oauth {
+export class Oauth extends events.EventEmitter {
     private _port: number;
     private _url: string;
     private _debug = debug('twitch:oauth');
@@ -50,6 +51,7 @@ export class Oauth {
      * @memberOf Oauth
      */
     constructor(options: IOptions) {
+        super();
         this._port = options.port || process.env.TWITCH_PORT || 3156;
         this._url = options.url || process.env.TWITCH_URL;
         this._client_id = options.client_id || process.env.TWITCH_TOKEN;
@@ -70,9 +72,7 @@ export class Oauth {
                 this._server_listening = true;
                 this._debug('Starting server for automated login, ready to call Automate()');
                 this.StartServer();
-                setTimeout(() => {
-                    this.Automate().then((data) => console.log(data)).catch((err) => console.error(err));
-                }, 1500);
+                this.emit('ready');
             }
         }
     }
@@ -136,8 +136,6 @@ export class Oauth {
         return new Promise((resolve, reject) => {
             
             const nightmare = Nightmare({ show: show || false });
-
-            // TODO: .g-recaptcha detection
 
             if (fs.existsSync('cookies.json')) {
                 fs.readFile('cookies.json', 'utf8', (err, data) => {

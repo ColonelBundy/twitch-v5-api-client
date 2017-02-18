@@ -2,10 +2,7 @@ import uuid = require('uuid/v4');
 import express = require('express')  
 import debug = require('debug');
 import request = require('request');
-
-import Nightmare = require('nightmare');   
-import phantom = require('phantom');
-import Horseman = require('node-horseman');
+import Nightmare = require('nightmare'); 
 import fs = require('fs');    
 
 interface ITwitchResponse {

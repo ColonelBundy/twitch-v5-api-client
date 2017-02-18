@@ -64,7 +64,6 @@ export class Oauth extends events.EventEmitter {
             this._debug('Starting server');
             this.StartServer();
         }
-
         if (options.automated && options.automated.user && options.automated.password) {
             this._debug(`Starting automated oauth login`);
 
@@ -72,7 +71,7 @@ export class Oauth extends events.EventEmitter {
                 this._server_listening = true;
                 this._debug('Starting server for automated login, ready to call Automate()');
                 this.StartServer();
-                this.emit('ready');
+                process.nextTick(() => this.emit('auto-ready'));
             }
         }
     }
@@ -125,6 +124,8 @@ export class Oauth extends events.EventEmitter {
      * 
      *  THIS IS VERY MESSY, BUT WORKS
      * 
+     *  @TODO: Decouple from this module to its own
+     * 
      * @private
      * @param {string} user
      * @param {string} password
@@ -161,6 +162,7 @@ export class Oauth extends events.EventEmitter {
                     }
 
                     sesh
+                        .wait(500)
                         .exists('input[name="username"]').then((result) => {
                             if (result) {
                                 this._debug('Username input exists, Proceeding with login')

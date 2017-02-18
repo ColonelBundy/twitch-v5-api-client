@@ -1,7 +1,7 @@
 {
   "name": "twitch-v5-api-client",
   "version": "0.0.1",
-  "description": "Client library to query twitch's v5 api",
+  "description": "Client library to query twitch's v5 api with a twist",
   "main": "app.js",
   "scripts": {
     "pretest": "tsc -p . --module commonjs --sourcemap",

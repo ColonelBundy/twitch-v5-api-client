@@ -185,7 +185,7 @@ export class Channel {
    * 
    * @memberOf TwitchClient
    */
-  public GetChannelById(user_id: number) {
+  public GetChannelById(user_id: number): Promise<IChannel> {
     return new Promise((resolve, reject) => {
         this._debug(`Getting channel by id: ${user_id}`);
         this._client.CallApi(`/channels/${user_id}`).then((data: IChannel) => {
@@ -204,7 +204,7 @@ export class Channel {
  * 
  * @memberOf TwitchClient
  */
-  public GetChannelsByUsername(users: Array<string>) {
+  public GetChannelsByUsername(users: Array<string>): Promise<UsersInterface> {
     return new Promise((resolve, reject) => {
         this._debug(`Getting channels by usernames: ${this._client.ConstructCommalist(users)}`);
         this._client.CallApi(`/users?login=${this._client.ConstructCommalist(users)}`).then((data: UsersInterface) => {
@@ -224,7 +224,7 @@ export class Channel {
  * 
  * @memberOf TwitchClient
  */
-  public GetChannelFollowers(user_id: number, options?: IGetChannelFollowersOptions) {
+  public GetChannelFollowers(user_id: number, options?: IGetChannelFollowersOptions): Promise<FollowersInterface> {
     return new Promise((resolve, reject) => {
         this._debug(`Getting channel followers by id: ${user_id}`);
         this._client.CallApi(`/channels/${user_id}/follows${this._client.ConstructOptions(options)}`).then((data: FollowersInterface) => {
@@ -250,7 +250,7 @@ export class Channel {
  * 
  * @memberOf TwitchClient
  */
-  public GetChannelTeams(user_id: number) {
+  public GetChannelTeams(user_id: number): Promise<ITeams[]> {
     return new Promise((resolve, reject) => {
         this._debug(`Getting channel teams by id: ${user_id}`);
         this._client.CallApi(`/channels/${user_id}/teams`).then((data: any) => {
@@ -270,7 +270,7 @@ export class Channel {
  * 
  * @memberOf TwitchClient
  */
-  public GetChannelVideos(user_id: number, options?: IGetChannelVideosOptions) {
+  public GetChannelVideos(user_id: number, options?: IGetChannelVideosOptions): Promise<IVideos> {
     return new Promise((resolve, reject) => {
         this._debug(`Getting channel videos by id: ${user_id}`);
         this._client.CallApi(`/channels/${user_id}/videos${this._client.ConstructOptions(options)}`).then((data: IVideos) => {
@@ -289,7 +289,7 @@ export class Channel {
  * 
  * @memberOf TwitchClient
  */
-  public GetChannelCommunity(user_id: number) {
+  public GetChannelCommunity(user_id: number): Promise<ICommunity> {
     return new Promise((resolve, reject) => {
         this._debug(`Getting channel community by user_id: ${user_id}`);
         this._client.CallApi(`/channels/${user_id}/community`).then((data: ICommunity) => {

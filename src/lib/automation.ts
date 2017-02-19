@@ -36,7 +36,7 @@ export default class AutomationHelper {
      * 
      * @memberOf AutomationHelper
      */
-    public Finish(button: boolean = false) {
+    public Finish(button: boolean = false): Promise<Object> {
         return new Promise((resolve, reject) => {
             if (button) {
                 this._sesh.click('.js-authorize');

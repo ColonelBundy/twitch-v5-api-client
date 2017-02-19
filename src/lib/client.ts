@@ -1,13 +1,13 @@
 import request = require('request');
 import debug = require('debug');
-import { Oauth, IOauthOptions } from './oauth';
+import { Oauth, IOauthOptions, ICredentials } from './oauth';
 
 interface IClientOptions {
     client_id?: string, // Can be different from Oauth client_id
     Oauth?: IOauthOptions;
 }
 
-interface ICombinedOptions {
+export interface ICombinedOptions {
   url?: string,
   limit?: number,
   offset?: number,
@@ -24,13 +24,6 @@ interface ITwitchError {
   status: Number,
   message: String
 }
-
-interface ICredentials {
-    access_token: string,
-    refresh_token: string,
-    scope: Array<string>
-}
-
 
 export default class Client {
   private _debug = debug('twitch:client');
@@ -73,7 +66,7 @@ export default class Client {
      * 
      * @memberOf Oauth
      */
-    public AutoAuthenticate() {
+    public AutoAuthenticate(): Promise<ICredentials> {
         return new Promise((resolve, reject) => {
             if (this._options.Oauth.automated && this._options.Oauth.automated.user && this._options.Oauth.automated.password) {
                 this.Oauth.Automatelogin(

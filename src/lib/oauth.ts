@@ -7,8 +7,9 @@ import fs = require('fs');
 import AutomationHelper from './automation';
 import iframe = require('nightmare-iframe-manager');
 
-interface ITwitchResponse {
+export interface ICredentials {
     access_token: string,
+    refresh_token: string,
     scope: string
 }
 
@@ -105,7 +106,7 @@ export class Oauth {
      * 
      * @memberOf Oauth
      */
-    public Automatelogin (user: string, password: string, show?: boolean) {
+    public Automatelogin (user: string, password: string, show?: boolean): Promise<ICredentials> {
         return new Promise((resolve, reject) => {
             let proxy = {};
             
@@ -246,7 +247,7 @@ export class Oauth {
      * 
      * @memberOf Oauth
      */
-    private GetToken(code: string) {
+    private GetToken(code: string): Promise<ICredentials> {
         return new Promise((resolve, reject) => {
             this._debug(`Getting token from twitch`);
             request.post({
@@ -263,7 +264,7 @@ export class Oauth {
                     return reject(err || data); 
                 }
 
-                return resolve(<ITwitchResponse>JSON.parse(body))
+                return resolve(<ICredentials>JSON.parse(body))
             });
         })
     }
@@ -313,7 +314,7 @@ export class Oauth {
         this._debug('Handling token request');
 
         if (req.query.code && req.query.state === this._current_state) {
-            this.GetToken(req.query.code).then((data: ITwitchResponse) => {
+            this.GetToken(req.query.code).then((data: ICredentials) => {
                 res.status(200).send(`<twitch-data>${JSON.stringify(data)}</twitch-data>`);
             }).catch((err) => console.error(err));
         } else {

@@ -76,11 +76,11 @@ export class Stream {
    * 
    * @memberOf TwitchClient
    */
-  public GetStreamByUser(user_id: number, options?: IGetStreamByUserOptions) {
+  public GetStreamByUser(user_id: number, options?: IGetStreamByUserOptions): Promise<IStream> {
     return new Promise((resolve, reject) => {
         this._debug(`Getting stream by user id: ${user_id}`);
         this._client.CallApi(`/streams/${user_id}${this._client.ConstructOptions(options)}`).then((data: any) => {
-            return resolve(<IStream>data.stream);
+            return resolve(data.stream);
         }).catch((err) => reject(err));
     })
   }
@@ -95,7 +95,7 @@ export class Stream {
  * 
  * @memberOf TwitchClient
  */
-  public GetStreamsByUser(users: Array<number>, options?: Routes.IDefaultOptions) {
+  public GetStreamsByUser(users: Array<number>, options?: Routes.IDefaultOptions): Promise<IStreamResponse> {
     return new Promise((resolve, reject) => {
         this._debug(`Getting streams by user array: ${this._client.ConstructCommalist(users)}`);
         this._client.CallApi(`/streams/?channel=${this._client.ConstructCommalist(users)}${this._client.ConstructOptions(options)}`)
@@ -113,7 +113,7 @@ export class Stream {
  * 
  * @memberOf TwitchClient
  */
-  public GetStreams(options: IGetStreamsOptions) {
+  public GetStreams(options: IGetStreamsOptions): Promise<IStreamResponse> {
     return new Promise((resolve, reject) => {
         this._debug(`Getting streams`);
         if (Object.keys(options).length === 0) {
@@ -134,11 +134,11 @@ export class Stream {
  * 
  * @memberOf TwitchClient
  */
-  public GetFeaturedStreams(options?: IGetStreamsOptions) {
+  public GetFeaturedStreams(options?: IGetStreamsOptions): Promise<IGetFeaturedStreams[]> {
     return new Promise((resolve, reject) => {
         this._debug(`Getting featured streams`);
         this._client.CallApi(`/streams/featured${this._client.ConstructOptions(options)}`).then((data: any) => {
-            return resolve(<IGetFeaturedStreams[]>data.featured);
+            return resolve(data.featured);
         }).catch((err) => reject(err));
     })
   }
@@ -151,7 +151,7 @@ export class Stream {
  * 
  * @memberOf TwitchClient
  */
-  public GetStreamSummary(options?: IGetStreamSummaryOptions) {
+  public GetStreamSummary(options?: IGetStreamSummaryOptions): Promise<IGetStreamSummary> {
     return new Promise((resolve, reject) => {
         this._debug(`Getting stream summary`);
         this._client.CallApi(`/streams/summary${this._client.ConstructOptions(options)}`).then((data: IGetStreamSummary) => {

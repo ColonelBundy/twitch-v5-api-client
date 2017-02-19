@@ -18,14 +18,30 @@ const TestUser3 = {
   name: 'nocopyrightsounds'
 }
 
-/*
 describe('Automation', function() {
   it('Should login', function(done) {
+    this.timeout(15000);
+      const TwitchClient = new Twitch({
+        Oauth: {
+            url: 'http://localhost:3156/token',
+            scope: 'user_read',
+            automated: {
+                verify: true
+            }
+        }
+      });
 
+       TwitchClient.Client.AutoAuthenticate().then((data) => {
+         should(data).have.properties(['access_token', 'refresh_token', 'scope']);
+         done();
+       }).catch((err) => {
+         should(err).be.type('string');
+         done();
+       });
   });
   
 });
-*/
+
 
 describe('Core', function() {
   describe('#RawApi()', function() {

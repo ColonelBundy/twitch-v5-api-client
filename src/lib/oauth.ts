@@ -13,8 +13,8 @@ interface ITwitchResponse {
 }
 
 interface IAutomation {
-    user: string,
-    password: string,
+    user?: string,
+    password?: string,
     show?: boolean,
     verify?: boolean,
     proxy?: {
@@ -28,7 +28,7 @@ export interface IOauthOptions {
     url: string,
     port?: number,
     scope?: string,
-    client_secret: string,
+    client_secret?: string,
     server?: boolean,
     automated?: IAutomation
 }
@@ -62,6 +62,8 @@ export class Oauth {
         this._client_secret = options.client_secret || process.env.TWITCH_SECRET;
         this._scope = options.scope || process.env.TWITCH_SCOPE;
         this._automated = options.automated;
+        this._automated.user = this._automated.user || process.env.TWITCH_USER;
+        this._automated.password = this._automated.password || process.env.TWITCH_PASSWORD;
 
         if (options.server) {
             this.StartServer();

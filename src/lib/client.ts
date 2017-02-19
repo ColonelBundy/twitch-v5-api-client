@@ -3,7 +3,7 @@ import debug = require('debug');
 import { Oauth, IOauthOptions, ICredentials } from './oauth';
 
 interface IClientOptions {
-    client_id?: string, // Can be different from Oauth client_id
+    client_id?: string,
     Oauth?: IOauthOptions;
 }
 

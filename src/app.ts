@@ -4,7 +4,7 @@ import { IOauthOptions } from './lib/oauth';
 import * as Routes from './routes';
 
 interface IOptions {
-    client_id?: string, // Can be different from Oauth client_id
+    client_id?: string,
     Oauth?: IOauthOptions;
 }
 

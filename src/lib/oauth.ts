@@ -119,7 +119,7 @@ export class Oauth {
             }
             
             const nightmare = Nightmare({ show: show || false, webPreferences: { webSecurity: false }, proxy});
-            iframe(Nightmare); // initialize iframe
+            iframe(Nightmare); // initialize iframe helper
 
             if (!fs.existsSync('cookies.json')) {
                 fs.writeFile('cookies.json', '{}', (err) => {

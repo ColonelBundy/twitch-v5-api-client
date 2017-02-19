@@ -2,7 +2,6 @@ import uuid = require('uuid/v4');
 import express = require('express')  
 import debug = require('debug');
 import request = require('request');
-import events = require('events');
 import Nightmare = require('nightmare'); 
 import fs = require('fs');    
 import AutomationHelper from './automation';
@@ -25,17 +24,16 @@ interface IAutomation {
     }
 }
 
-export interface IOptions {
+export interface IOauthOptions {
     url: string,
     port?: number,
     scope?: string,
-    client_id: string,
     client_secret: string,
     server?: boolean,
     automated?: IAutomation
 }
 
-export class Oauth extends events.EventEmitter {
+export class Oauth {
     private _port: number;
     private _url: string;
     private _debug = debug('twitch:oauth');
@@ -57,87 +55,43 @@ export class Oauth extends events.EventEmitter {
      * 
      * @memberOf Oauth
      */
-    constructor(options: IOptions) {
-        super();
+    constructor(client_id: string, options: IOauthOptions) {
         this._port = options.port || process.env.TWITCH_PORT || 3156;
         this._url = options.url || process.env.TWITCH_URL;
-        this._client_id = options.client_id || process.env.TWITCH_TOKEN;
+        this._client_id = client_id || process.env.TWITCH_TOKEN;
         this._client_secret = options.client_secret || process.env.TWITCH_SECRET;
         this._scope = options.scope || process.env.TWITCH_SCOPE;
         this._automated = options.automated;
 
         if (options.server) {
-            this._server_listening = true;
-            this._debug('Starting server');
             this.StartServer();
         }
+
         if (options.automated && options.automated.user && options.automated.password) {
-            this._debug(`Starting automated oauth login`);
+            this._debug(`Ready for automated authentication`);
 
             if (!options.server) {
-                this._server_listening = true;
-                this._debug('Starting server for automated login, ready to call Automate()');
                 this.StartServer();
-                process.nextTick(() => this.emit('auto-ready'));
             }
         }
     }
 
     /**
-     * Begin the automation process
-     * listen for 'auto-ready' on the eventemitter
+     * Get status of the internal server
      * 
-     * @TODO: Cleanup this ugly function
-     * 
-     * @returns promise
+     * @readonly
      * 
      * @memberOf Oauth
      */
-    public Automate() {
-        return new Promise((resolve, reject) => {
-            if (this._automated && this._automated.user && this._automated.password && this._server_listening) {
-                this.Automatelogin(this._automated.user, this._automated.password, this._automated.show).then(resolve).catch(reject);
-            } else {
-                reject('Please modify your options to allow automation');
-            }
-        })
+    public get IsServerUp() {
+        return this._server_listening;
     }
 
     /**
-     * Get's the auth token from twitch
-     * 
-     * @private
-     * @param {string} code
-     * @returns promise
-     * 
-     * @memberOf Oauth
-     */
-    private GetToken(code: string) {
-        return new Promise((resolve, reject) => {
-            this._debug(`Getting token from twitch`);
-            request.post({
-                headers: {
-                    'Accept': 'application/vnd.twitchtv.v5+json'
-                },
-                body: `client_id=${this._client_id}&client_secret=${this._client_secret}` + 
-                `&grant_type=authorization_code&redirect_uri=${this._url}&code=${code}&state=${this._current_state}`,
-                url: this._oauth_url_token
-            }, (err, response, body) => {
-                if (err || response.statusCode !== 200) { // quick hack :D
-                    let data = JSON.parse(body);
-                    this._debug(`Twitch Error: '${data.error}', message: '${data.message}'`) 
-                    return reject(err || data); 
-                }
-
-                return resolve(<ITwitchResponse>JSON.parse(body))
-            });
-        })
-    }
-
-    /**
-     * Automate twitch login to grab the access token
-     * be aware that this page contains captcha protection
-     * consider using a proxy if multiple attemps are to be made
+     * Automate twitch login to grab the access token,
+     * be aware that this page contains captcha protection.
+     * Consider using a proxy if multiple attemps are to be made.
+     * Cookies will skip the captcha all together though.
      * -------------------------------
      *  THIS IS VERY MESSY, BUT WORKS
      * -------------------------------
@@ -149,7 +103,7 @@ export class Oauth extends events.EventEmitter {
      * 
      * @memberOf Oauth
      */
-    private Automatelogin (user: string, password: string, show?: boolean) {
+    public Automatelogin (user: string, password: string, show?: boolean) {
         return new Promise((resolve, reject) => {
             let proxy = {};
             
@@ -282,6 +236,37 @@ export class Oauth extends events.EventEmitter {
     }
 
     /**
+     * Get's the auth token from twitch
+     * 
+     * @private
+     * @param {string} code
+     * @returns promise
+     * 
+     * @memberOf Oauth
+     */
+    private GetToken(code: string) {
+        return new Promise((resolve, reject) => {
+            this._debug(`Getting token from twitch`);
+            request.post({
+                headers: {
+                    'Accept': 'application/vnd.twitchtv.v5+json'
+                },
+                body: `client_id=${this._client_id}&client_secret=${this._client_secret}` + 
+                `&grant_type=authorization_code&redirect_uri=${this._url}&code=${code}&state=${this._current_state}`,
+                url: this._oauth_url_token
+            }, (err, response, body) => {
+                if (err || response.statusCode !== 200) { // quick hack :D
+                    let data = JSON.parse(body);
+                    this._debug(`Twitch Error: '${data.error}', message: '${data.message}'`) 
+                    return reject(err || data); 
+                }
+
+                return resolve(<ITwitchResponse>JSON.parse(body))
+            });
+        })
+    }
+
+    /**
      * Starts the server used to receive data from twitch
      * 
      * @TODO: Better error handling
@@ -291,9 +276,14 @@ export class Oauth extends events.EventEmitter {
      * @memberOf Oauth
      */
     private StartServer() {
+        this.app.use((req, res, next) => {
+            res.setHeader('X-Powered-By', 'TwitchApi Client Oauth Server');
+            next();
+        });
         this.app.get('/token', (req, res) => this.HandleToken(req, res));
         this.app.get('/auth', (req, res) => this.HandleAuth(req, res));
-        this.app.get('/', (request, response) => response.send('Nothing here'));
+        this.app.get('/healthz', (req, res) => res.send('OK'));
+        this.app.get('/', (req, res) => res.send(`:: TwitchApi Client Oauth Server ::`));
         this.app.disable('view cache');
 
         this.app.listen(this._port, (err) => {  
@@ -301,6 +291,7 @@ export class Oauth extends events.EventEmitter {
                 return console.error(err);
             }
 
+            this._server_listening = true;
             this._debug(`Server bridge listening on ${this._port}`);
         })
     }

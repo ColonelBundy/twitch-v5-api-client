@@ -5,6 +5,8 @@ import request = require('request');
 import events = require('events');
 import Nightmare = require('nightmare'); 
 import fs = require('fs');    
+import AutomationHelper from './automation';
+import iframe = require('nightmare-iframe-manager');
 
 interface ITwitchResponse {
     access_token: string,
@@ -15,7 +17,12 @@ interface IAutomation {
     user: string,
     password: string,
     show?: boolean,
-    verify?: boolean
+    verify?: boolean,
+    proxy?: {
+        server: string,
+        username?: string,
+        password?: string
+    }
 }
 
 export interface IOptions {
@@ -76,6 +83,16 @@ export class Oauth extends events.EventEmitter {
         }
     }
 
+    /**
+     * Begin the automation process
+     * listen fro 'auto-ready' on the eventemitter
+     * 
+     * @TODO: Cleanup this ugly function
+     * 
+     * @returns promise
+     * 
+     * @memberOf Oauth
+     */
     public Automate() {
         return new Promise((resolve, reject) => {
             if (this._automated && this._automated.user && this._automated.password && this._server_listening) {
@@ -121,10 +138,11 @@ export class Oauth extends events.EventEmitter {
      * Automate twitch login to grab the access token
      * be aware that this page contains captcha protection
      * consider using a proxy if multiple attemps are to be made
-     * 
+     * -------------------------------
      *  THIS IS VERY MESSY, BUT WORKS
-     * 
-     *  @TODO: Decouple from this module to its own
+     * -------------------------------
+     * @TODO: Decouple from this module to its own
+     * @TODO: Better error handling
      * 
      * @private
      * @param {string} user
@@ -135,204 +153,140 @@ export class Oauth extends events.EventEmitter {
      */
     private Automatelogin (user: string, password: string, show?: boolean) {
         return new Promise((resolve, reject) => {
+            let proxy = {};
             
-            const nightmare = Nightmare({ show: show || false });
-
-            if (fs.existsSync('cookies.json')) {
-                fs.readFile('cookies.json', 'utf8', (err, data) => {
-                    if (err) return console.error('Unable to read cookies.json', err);
-
-                    const sesh = nightmare.goto(`http://localhost:${this._port}/auth`);
-
-                    // If we can read the cookie file we proceed
-                    if (typeof data === 'string') {
-                        this._debug('Found cookies');
-
-                        try {
-                            sesh
-                                .cookies.set(JSON.parse(data))
-                                .wait()
-                                .goto(`http://localhost:${this._port}/auth`)
-                        }catch (e) {
-                            return console.error('Unable to parse cookies.json');
-                        }
-                        
-                    } else {
-                        this._debug('Cookie file invalid, continuing with manual login');
+            if (this._automated.proxy) {
+                proxy = {
+                    switches: {
+                        'proxy-server': this._automated.proxy.server
                     }
+                }
+            }
+            
+            const nightmare = Nightmare({ show: show || false, webPreferences: { webSecurity: false }, proxy});
+            iframe(Nightmare); // initialize iframe
 
-                    sesh
-                        .wait(500)
-                        .exists('input[name="username"]').then((result) => {
-                            if (result) {
-                                this._debug('Username input exists, Proceeding with login')
+            if (!fs.existsSync('cookies.json')) {
+                fs.writeFile('cookies.json', '{}', (err) => {
+                        if (err) return reject(`Unable to write cookies.json \n\r ${err}`);
+                        this._debug('Cookie file was not found, wrote an empty one instead.');
+                });
+            }
+
+            fs.readFile('cookies.json', 'utf8', (err, data) => {
+                if (err) return reject(`Unable to read cookies.json \n\r ${err}`);
+
+                const sesh = nightmare.goto(`http://localhost:${this._port}/auth`);
+                const helper = new AutomationHelper(sesh);
+
+                if (this._automated.proxy && this._automated.proxy.username && this._automated.proxy.password) {
+                    sesh.authentication(this._automated.proxy.username, this._automated.proxy.password)
+                }
+
+
+                // If we can read the cookie file we proceed
+                if (typeof data === 'string') {
+                    try {
+                        let Cookies = JSON.parse(data);
+                        if (typeof Cookies === 'object') {
+                            this._debug('Found cookies');
+
+                            if (Object.keys(Cookies).length !== 0) { 
                                 sesh
-                                    .exists('.g-recaptcha').then((result) => { // Looks like the captcha exists hmm.
-                                        if (result) {
-                                            if (this._automated.show) {
-                                                this._debug('Captcha has been activated, Solve it without clicking submit');
+                                    .cookies.set(Cookies)
+                                    .wait()
+                                    .goto(`http://localhost:${this._port}/auth`)
+                                    .wait()
+                            }
+                        } else {
+                            sesh.halt();
+                            return reject('Invalid cookies');
+                        }
+                    }catch (e) {
+                        sesh.halt();
+                        return reject('Unable to parse cookies.json');
+                    }
+                    
+                } else {
+                    this._debug('Cookie file invalid, continuing with manual login');
+                }
 
+                sesh
+                    .exists('input[name="username"]').then((result) => {
+                        if (result) {
+                            this._debug('Username input exists, Proceeding with login')
+                            sesh
+                                .exists('.g-recaptcha').then((result) => { // Looks like the captcha exists hmm.
+                                    if (result) {
+                                        if (this._automated.show) {
+                                            this._debug('Captcha has been activated, Solve it without clicking Log in');
+                                                // Insert for convencience
+                                                helper.InsertUserInfo(user, password);
+
+                                                // Wait for user to solve captcha ( 30s timeout )
                                                 sesh
-                                                    .insert('input[name="username"]', user) // Insert for convencience
-                                                    .insert('input[name="password"]', password) // Insert for convencience
-
-                                                    // Wait for user to solve captcha ( 30s )
-                                                    .wait('.recaptcha-checkbox-checked') 
+                                                    .enterIFrame('iframe[name="undefined"]')
+                                                    .wait('[aria-checked="true"]') 
                                                     // Check if its been solved
-                                                    .exists('.recaptcha-checkbox-checked', (result) => { 
+                                                    .exists('[aria-checked="true"]').then((result) => { 
                                                         if (result) { // its been solved so we continue
                                                             sesh
+                                                                .exitIFrame()
                                                                 .click('button')
                                                                 .wait()
                                                                 .exists('.js-authorize').then((result) => {
                                                                     if (result) {
                                                                         this._debug('Authorize button exists, clicking...');
-                                                                        sesh
-                                                                            .click('.js-authorize')
-                                                                            .wait('twitch-data')
-                                                                            .evaluate(() => {
-                                                                                return document.querySelector('twitch-data').textContent
-                                                                            })
-                                                                            .then((result) => {
-                                                                                sesh
-                                                                                    .cookies.get({url: null}).end().then((cookies) => {
-                                                                                        fs.writeFile('cookies.json', 
-                                                                                            JSON.stringify(cookies), (err) => {
-                                                                                                if (err) return console.log(err);
-                                                                                                this._debug('Writing cookies to file');
-                                                                                        });
-                                                                                    });
-
-                                                                                resolve(JSON.parse(result));
-                                                                            })
-                                                                            .catch((error) => {
-                                                                                reject(error);
-                                                                            });
+                                                                        helper.Finish(true).then(resolve).catch(reject);
                                                                     } else {
-                                                                        sesh
-                                                                            .wait('twitch-data')
-                                                                            .evaluate(() => {
-                                                                                return document.querySelector('twitch-data').textContent
-                                                                            })
-                                                                            .then((result) => {
-                                                                                sesh
-                                                                                    .cookies.get({url: null}).end().then((cookies) => {
-                                                                                        fs.writeFile('cookies.json', 
-                                                                                            JSON.stringify(cookies), (err) => {
-                                                                                                if (err) return console.log(err);
-                                                                                                this._debug('Writing cookies to file');
-                                                                                        });
-                                                                                    });
-
-                                                                                resolve(JSON.parse(result));
-                                                                            })
-                                                                            .catch((error) => {
-                                                                                reject(error);
-                                                                            });
+                                                                        helper.Finish().then(resolve).catch(reject);
                                                                     }
                                                                 });
                                                         } else {
                                                             sesh
                                                                 .halt('Captcha has been activated', () => {
-                                                                    return console.error(`Captcha has been activated.` 
+                                                                    return this._debug(`Captcha has been activated.` 
                                                                         + ` You failed to solve it within the allotted time (30s)`);
                                                                 }); // Kill it
                                                         }
-                                                    });
-                                            } else {
-                                                sesh
-                                                    .halt('Captcha has been activated', () => {
-                                                        return console.error(`Captcha has been activated.` 
-                                                            + ` Please use the show option in automation to enter it manually` 
-                                                            + ` or use the proxy option.`);
-                                                    }); // Kill it
-                                            }
+                                                    }).catch(reject);
                                         } else {
                                             sesh
-                                                .insert('input[name="username"]', user)
-                                                .insert('input[name="password"]', password)
-                                                .click('button')
-                                                .wait()
-                                                .exists('.js-authorize').then((result) => {
-                                                    if (result) {
-                                                        this._debug('Authorize button exists, clicking...');
-                                                        sesh
-                                                            .click('.js-authorize')
-                                                            .wait('twitch-data')
-                                                            .evaluate(() => {
-                                                                return document.querySelector('twitch-data').textContent
-                                                            })
-                                                            .then((result) => {
-                                                                sesh
-                                                                    .cookies.get({url: null}).end().then((cookies) => {
-                                                                        fs.writeFile('cookies.json', JSON.stringify(cookies), (err) => {
-                                                                            if (err) return console.log(err);
-                                                                            this._debug('Writing cookies to file');
-                                                                        });
-                                                                    });
-
-                                                                resolve(JSON.parse(result));
-                                                            })
-                                                            .catch((error) => {
-                                                                reject(error);
-                                                            });
-                                                    } else {
-                                                        sesh
-                                                            .wait('twitch-data')
-                                                            .evaluate(() => {
-                                                                return document.querySelector('twitch-data').textContent
-                                                            })
-                                                            .then((result) => {
-                                                                sesh
-                                                                    .cookies.get({url: null}).end().then((cookies) => {
-                                                                        fs.writeFile('cookies.json', JSON.stringify(cookies), (err) => {
-                                                                            if (err) return console.log(err);
-                                                                            this._debug('Writing cookies to file');
-                                                                        });
-                                                                    });
-
-                                                                resolve(JSON.parse(result));
-                                                            })
-                                                            .catch((error) => {
-                                                                reject(error);
-                                                            });
-                                                    }
-                                                })
+                                                .halt('Captcha has been activated', () => {
+                                                    return this._debug(`Captcha has been activated.` 
+                                                        + ` Please use the show option in automation to enter it manually` 
+                                                        + ` or use the proxy option.`);
+                                                }); // Kill it
                                         }
-                                    });
-                            } else {
-                                // Press authorize button
-                                this._debug('Authorize button exists, clicking...');
-                                sesh
-                                    .wait('.js-authorize')
-                                    .click('.js-authorize')
-                                    .wait('twitch-data')
-                                    .evaluate(() => {
-                                        return document.querySelector('twitch-data').textContent
-                                    })
-                                    .then((result) => {
+                                    } else {
+                                        helper.InsertUserInfo(user, password, true);
                                         sesh
-                                            .cookies.get({url: null}).end().then((cookies) => {
-                                                fs.writeFile('cookies.json', JSON.stringify(cookies), (err) => {
-                                                    if (err) return console.log(err);
-                                                    this._debug('Writing cookies to file');
-                                                });
-                                            });
-
-                                        resolve(JSON.parse(result));
-                                    })
-                                    .catch((error) => {
-                                        reject(error);
-                                    });
-                            }
-                        });
-                });
-            }
+                                            .wait()
+                                            .exists('.js-authorize').then((result) => {
+                                                if (result) {
+                                                    this._debug('Authorize button exists, clicking...');
+                                                    helper.Finish(true).then(resolve).catch(reject);
+                                                } else {
+                                                    helper.Finish().then(resolve).catch(reject);
+                                                }
+                                            })
+                                    }
+                                });
+                        } else {
+                            // Press authorize button
+                            this._debug('Authorize button exists, clicking...');
+                            sesh.wait('.js-authorize');
+                            helper.Finish(true).then(resolve).catch(reject);
+                        }
+                    });
+            });
         });
     }
 
     /**
      * Starts the server used to receive data from twitch
+     * 
+     * @TODO: Better error handling
      * 
      * @private
      * 
@@ -349,12 +303,14 @@ export class Oauth extends events.EventEmitter {
                 return console.log(err);
             }
 
-            this._debug(`Server listening on ${this._port}`);
+            this._debug(`Server bridge listening on ${this._port}`);
         })
     }
 
     /**
      * Handle code sent from twitch
+     * 
+     * @TODO: Better error handling
      * 
      * @private
      * @param {express.Request} req
@@ -368,7 +324,7 @@ export class Oauth extends events.EventEmitter {
         if (req.query.code && req.query.state === this._current_state) {
             this.GetToken(req.query.code).then((data: ITwitchResponse) => {
                 res.status(200).send(`<twitch-data>${JSON.stringify(data)}</twitch-data>`);
-            }).catch((err) => console.log(err));
+            }).catch((err) => console.error(err));
         } else {
             res.status(500).send('Code was not set or state invalid');
         }

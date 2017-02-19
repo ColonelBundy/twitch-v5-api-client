@@ -4,6 +4,8 @@ a node.js client to interact with twitch's v5 api. (in progress)
 ## Install
 TBD
 
+## Documentation
+TBD
 
 ## License
 ```

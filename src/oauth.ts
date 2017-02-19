@@ -85,7 +85,7 @@ export class Oauth extends events.EventEmitter {
 
     /**
      * Begin the automation process
-     * listen fro 'auto-ready' on the eventemitter
+     * listen for 'auto-ready' on the eventemitter
      * 
      * @TODO: Cleanup this ugly function
      * 
@@ -141,8 +141,6 @@ export class Oauth extends events.EventEmitter {
      * -------------------------------
      *  THIS IS VERY MESSY, BUT WORKS
      * -------------------------------
-     * @TODO: Decouple from this module to its own
-     * @TODO: Better error handling
      * 
      * @private
      * @param {string} user
@@ -241,7 +239,7 @@ export class Oauth extends events.EventEmitter {
                                                                     } else {
                                                                         helper.Finish().then(resolve).catch(reject);
                                                                     }
-                                                                });
+                                                                }).catch(reject);
                                                         } else {
                                                             sesh
                                                                 .halt('Captcha has been activated', () => {
@@ -269,9 +267,9 @@ export class Oauth extends events.EventEmitter {
                                                 } else {
                                                     helper.Finish().then(resolve).catch(reject);
                                                 }
-                                            })
+                                            }).catch(reject);
                                     }
-                                });
+                                }).catch(reject);
                         } else {
                             // Press authorize button
                             this._debug('Authorize button exists, clicking...');
@@ -300,7 +298,7 @@ export class Oauth extends events.EventEmitter {
 
         this.app.listen(this._port, (err) => {  
             if (err) {
-                return console.log(err);
+                return console.error(err);
             }
 
             this._debug(`Server bridge listening on ${this._port}`);
@@ -348,14 +346,14 @@ export class Oauth extends events.EventEmitter {
         let verify_auth: boolean = false;
 
         // This parameter decides whether the user should be re-prompted for authorization.
-        // Aka click a button to proceed or not, this is required for the automated login
+        // Aka click a button to proceed or not
         if (this._automated) { 
             verify_auth = this._automated.verify;
         }
 
         process.nextTick(() => 
             res.redirect(`${this._oauth_url_auth}?response_type=code&client_id=${this._client_id}` + 
-            `&redirect_uri=${this._url}&scope=${this._scope}&state=${this._current_state}&force_verify=true`)
+            `&redirect_uri=${this._url}&scope=${this._scope}&state=${this._current_state}&force_verify=${verify_auth}`)
         ); 
     }
 }

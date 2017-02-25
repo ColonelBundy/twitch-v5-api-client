@@ -46,6 +46,35 @@ export default class Client {
 
 
   /**
+   * Are we authenticated or not? :)
+   * 
+   * @returns boolean
+   * 
+   * @memberOf Client
+   */
+  public IsAuthenticated() {
+      return this._authenticated;
+  }
+
+
+  /**
+   * Check whether we the required scope
+   * 
+   * @param {string} scope
+   * @returns boolean
+   * 
+   * @memberOf Client
+   */
+  public HasScope(scope: string) {
+    if (this._credentials && this._credentials.scope.indexOf(scope) > -1) {
+        return true;
+    } else {
+        return false;
+    }
+  }
+
+
+  /**
    * Set credentials manually
    * 
    * Quite sloppy, but its upto the user.
@@ -95,10 +124,10 @@ export default class Client {
  * 
  * @memberOf TwitchClient
  */
-  public RawApi(url: string, options?: Object) {
+  public RawApi(url: string, options?: Object, Auth?: boolean) {
     return new Promise((resolve, reject) => {
         this._debug(`Rawapi request: ${url + this.ConstructOptions(options)}`);
-        this.CallApi(url + (options ? this.ConstructOptions(options) : '')).then((data: any) => {
+        this.CallApi(url + (options ? this.ConstructOptions(options) : ''), Auth).then((data: any) => {
             return resolve(data);
         }).catch((err) => reject(err));
     })
@@ -162,13 +191,26 @@ export default class Client {
  * 
  * @memberOf TwitchClient
  */
-  public CallApi(url: string) {
+  public CallApi(url: string, Auth?: boolean) {
     return new Promise((resolve, reject) => {
         this._debug(`Calling api: ${this._twitchURI}${url}`);
+        let auth: string = '';
+
+        if (Auth) {
+            this._debug(`Calling an authenicated endpoint`);
+
+            if (!this._authenticated || !this._credentials) {
+                return reject('Not authenticated');
+            } else {
+                auth = `OAuth ${this._credentials.access_token}`;
+            }
+        }
+
         request.get({
             headers: {
                 'Accept': 'application/vnd.twitchtv.v5+json',
-                'Client-ID': this._client_id
+                'Client-ID': this._client_id,
+                'Authorization': auth
             },
             url: this._twitchURI + url
         }, (err, response, body) => {

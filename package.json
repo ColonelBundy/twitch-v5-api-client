@@ -2,10 +2,10 @@
   "name": "twitch-v5-api-client",
   "version": "0.0.1",
   "description": "Client library to query twitch's v5 api with a twist",
-  "main": "app.js",
+  "main": "index.js",
   "scripts": {
     "pretest": "tsc -p . --module commonjs --sourcemap",
-    "test": "nyc mocha ./dist/app.test.js",
+    "test": "nyc mocha ./dist/test/test.js",
     "posttest": "nyc report --reporter=json --reporter=lcov && codecov -f coverage/*.json",
     "watch": "cross-env DEBUG=twitch* concurrently -kr \"tsc -w -p .\" \"sleep 3 && nodemon dist/dev.js --watch dist/ --delay 1000ms\"",
     "dev": "cross-env DEBUG=twitch* tsc -p . && nodemon dist/dev.js"

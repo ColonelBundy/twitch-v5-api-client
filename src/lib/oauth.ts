@@ -10,7 +10,7 @@ import iframe = require('nightmare-iframe-manager');
 export interface ICredentials {
     access_token: string,
     refresh_token: string,
-    scope: string
+    scope: string[]
 }
 
 interface IAutomation {

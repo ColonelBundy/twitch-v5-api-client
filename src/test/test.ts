@@ -1,6 +1,6 @@
 import should = require('should');
-import Twitch from './app';
-import * as Routes from './routes';
+import Twitch from '../index';
+import * as Routes from '../routes';
 
 const Client = new Twitch();
 const TestUser = {
